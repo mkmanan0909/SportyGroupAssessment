@@ -1,5 +1,6 @@
 package org.assessment.sporty.service;
 
+import org.assessment.sporty.dto.EventStatus;
 import org.assessment.sporty.dto.ExternalScoreResponse;
 import org.assessment.sporty.dto.ScoreMessage;
 import org.slf4j.Logger;
@@ -49,6 +50,7 @@ public class LiveEventPoller {
             }
             String id = score.getEventId() != null ? score.getEventId() : eventId;
             publisher.publish(new ScoreMessage(id, score.getCurrentScore(), Instant.now()));
+            events.update(id, EventStatus.NOT_LIVE);
         } catch (Exception e) {
             log.error("poll failed for {}", eventId, e);
         }
