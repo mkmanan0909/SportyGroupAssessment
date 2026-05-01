@@ -39,11 +39,6 @@ Copy **`.env.example`** to **`.env`** when you tune Kafka advertised hostnames (
 
 Each Kafka send is **time-bounded** (**`sporty.kafka.publish.timeout-ms`**, default **10s**): the poller stops waiting after that per attempt and Spring Retry exhausts (**`sporty.kafka.publish.max-attempts`**) rather than blocking indefinitely while the broker is down.
 
-**`mvn clean` fails** (“Failed to delete …`SportyGroupAssessment-1.0-SNAPSHOT.jar`”): a **running JVM** still has that file open—for example **`java -jar target\…`** or an IDE run/debug. Stop those processes (**Task Manager** → `java.exe`, or close the debugger), then rerun Maven. To locate the lock holder in PowerShell:  
-`Get-CimInstance Win32_Process -Filter "Name = 'java.exe'" | Where-Object { $_.CommandLine -match 'SportyGroupAssessment' } | Select-Object ProcessId, CommandLine`
-
-**IntelliJ / main class:** Entry point is **`org.assessment.sporty.SportyApplication`** (see **`pom.xml`** → **`spring-boot-maven-plugin`** → **`mainClass`**). Using an older package (**`org.practice.sporty`**…) yields **`ClassNotFoundException`** at startup.
-
 ---
 
 ## Run full stack in Docker (`sporty` + Kafka)
@@ -161,7 +156,7 @@ Parts of scaffolding, refactoring, Docker/Compose snippets, **`README`** run gui
 - Code review passes for thread safety (**`ConcurrentHashMap`**, snapshot copy), double **`isLive`** check before Kafka publish after HTTP fetch, and alignment with **`eventId`** / **`currentScore`** JSON.
 
 **Responsible use.**  
-AI output was **edited** where it mismatched homework constraints (exact endpoint **`POST /events/status`**, payloads, **`~10 s`** poll, Kafka retries, observable logging). Errors (e.g. placeholder resolution timing, misplaced producer properties) were **fixed in code**, not pasted blindly.
+AI output was **edited** where it mismatched assessment constraints (**`~10 s`** poll, Kafka retries, observable logging). Errors (e.g. placeholder resolution timing, misplaced producer properties) were **fixed in code**, not pasted blindly.
 
 ---
 
