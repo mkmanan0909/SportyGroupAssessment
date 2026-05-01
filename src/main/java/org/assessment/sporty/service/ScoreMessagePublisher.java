@@ -15,6 +15,8 @@ import org.springframework.util.concurrent.ListenableFuture;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Service
 public class ScoreMessagePublisher {
@@ -23,20 +25,28 @@ public class ScoreMessagePublisher {
 
     private final KafkaTemplate<String, ScoreMessage> kafka;
     private final String topic;
+    private final long publishTimeoutMs;
 
-    public ScoreMessagePublisher(KafkaTemplate<String, ScoreMessage> kafka, @Value("${sporty.kafka.topic}") String topic) {
+    public ScoreMessagePublisher(
+            KafkaTemplate<String, ScoreMessage> kafka,
+            @Value("${sporty.kafka.topic}") String topic,
+            @Value("${sporty.kafka.publish.timeout-ms:10000}") long publishTimeoutMs) {
         this.kafka = kafka;
         this.topic = topic;
+        this.publishTimeoutMs = publishTimeoutMs;
     }
 
-    /** Mostly for send().get() flaking; not trying to retry programmer errors. */
+    /**
+     * Retries transient send failures. Each attempt is bounded by {@link #publishTimeoutMs} so a dead broker does not
+     * block indefinitely (Kafka client would otherwise keep retrying metadata for a long time).
+     */
     @Retryable(
-            value = ExecutionException.class,
+            value = {ExecutionException.class, TimeoutException.class},
             maxAttemptsExpression = "${sporty.kafka.publish.max-attempts:3}",
             backoff = @Backoff(delayExpression = "${sporty.kafka.publish.backoff-ms:400}"))
     public void publish(ScoreMessage message) throws Exception {
         ListenableFuture<SendResult<String, ScoreMessage>> future = kafka.send(topic, message.getEventId(), message);
-        SendResult<String, ScoreMessage> result = future.get();
+        SendResult<String, ScoreMessage> result = future.get(publishTimeoutMs, TimeUnit.MILLISECONDS);
         RecordMetadata md = result.getRecordMetadata();
         if (md != null) {
             log.info(
@@ -51,7 +61,7 @@ public class ScoreMessagePublisher {
     }
 
     @Recover
-    void gaveUp(ExecutionException ex, ScoreMessage message) {
-        log.error("kafka gave up on {}: {}", message.getEventId(), ex.getMessage());
+    void gaveUp(Throwable ex, ScoreMessage message) {
+        log.error("kafka publish gave up eventId={}: {} - {}", message.getEventId(), ex.getClass().getSimpleName(), ex.getMessage());
     }
 }

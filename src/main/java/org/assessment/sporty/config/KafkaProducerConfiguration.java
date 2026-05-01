@@ -23,11 +23,15 @@ public class KafkaProducerConfiguration {
 
     @Bean
     public ProducerFactory<String, ScoreMessage> scoreMessageProducerFactory(
-            @Value("${spring.kafka.bootstrap-servers}") String bootstrapServers) {
+            @Value("${spring.kafka.bootstrap-servers}") String bootstrapServers,
+            @Value("${sporty.kafka.publish.timeout-ms:10000}") int publishTimeoutMs) {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.ACKS_CONFIG, "1");
         props.put(ProducerConfig.RETRIES_CONFIG, 0);
+        props.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, publishTimeoutMs);
+        props.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, publishTimeoutMs);
+        props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, publishTimeoutMs + 2000);
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());

@@ -62,6 +62,9 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>org.assessment.sporty.SportyApplication</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>
